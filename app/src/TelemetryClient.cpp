@@ -9,10 +9,13 @@ TelemetryClient::TelemetryClient(QString name, QObject *parent)
     : QObject(parent)
     , m_name(std::move(name))
 {
+    m_reconnectTimer.setInterval(1500);
+    connect(&m_reconnectTimer, &QTimer::timeout, this, &TelemetryClient::attemptReconnect);
     connect(&m_socket, &QTcpSocket::readyRead, this, &TelemetryClient::handleReadyRead);
     connect(&m_socket, &QTcpSocket::connected, this, &TelemetryClient::updateConnectionState);
     connect(&m_socket, &QTcpSocket::disconnected, this, &TelemetryClient::updateConnectionState);
     connect(&m_socket, &QTcpSocket::stateChanged, this, &TelemetryClient::updateConnectionState);
+    connect(&m_socket, &QTcpSocket::errorOccurred, this, &TelemetryClient::updateConnectionState);
 }
 
 QString TelemetryClient::name() const
@@ -37,12 +40,26 @@ QString TelemetryClient::lastUpdated() const
 
 void TelemetryClient::connectToService(const QString &host, quint16 port)
 {
+    m_host = host;
+    m_port = port;
+
     if (m_socket.state() != QAbstractSocket::UnconnectedState) {
         m_socket.abort();
     }
 
     m_buffer.clear();
     m_socket.connectToHost(host, port);
+}
+
+void TelemetryClient::sendMessage(const QVariantMap &message)
+{
+    if (m_socket.state() != QAbstractSocket::ConnectedState) {
+        return;
+    }
+
+    const QByteArray encoded = QJsonDocument(QJsonObject::fromVariantMap(message)).toJson(QJsonDocument::Compact) + '\n';
+    m_socket.write(encoded);
+    m_socket.flush();
 }
 
 void TelemetryClient::handleReadyRead()
@@ -66,6 +83,12 @@ void TelemetryClient::handleReadyRead()
 
 void TelemetryClient::updateConnectionState()
 {
+    if (m_socket.state() == QAbstractSocket::ConnectedState) {
+        m_reconnectTimer.stop();
+    } else if (!m_host.isEmpty() && !m_reconnectTimer.isActive()) {
+        m_reconnectTimer.start();
+    }
+
     emit connectedChanged();
 }
 
@@ -78,6 +101,7 @@ void TelemetryClient::consumeLine(const QByteArray &line)
 
     m_payload = document.object().toVariantMap();
     emit payloadChanged();
+    emit messageReceived(m_payload);
 
     const QString timestamp = m_payload.value(QStringLiteral("timestamp")).toString();
     if (!timestamp.isEmpty()) {
@@ -94,4 +118,13 @@ void TelemetryClient::setLastUpdated(const QString &value)
 
     m_lastUpdated = value;
     emit lastUpdatedChanged();
+}
+
+void TelemetryClient::attemptReconnect()
+{
+    if (m_socket.state() != QAbstractSocket::UnconnectedState || m_host.isEmpty() || m_port == 0) {
+        return;
+    }
+
+    m_socket.connectToHost(m_host, m_port);
 }

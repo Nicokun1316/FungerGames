@@ -1,13 +1,13 @@
 #include <QCoreApplication>
 
-#include "GameSessionServer.h"
+#include "FaceTrackingServer.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    GameSessionServer server;
-    if (!server.start(45455)) {
+    FaceTrackingServer server;
+    if (!server.start(45454)) {
         return 1;
     }
 

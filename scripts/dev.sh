@@ -28,9 +28,9 @@ run_all() {
     build
   fi
 
-  "${BUILD_DIR}/bin/device-status-service" &
+  "${BUILD_DIR}/bin/face-tracking-service" &
   SERVICE_PIDS+=($!)
-  "${BUILD_DIR}/bin/game-session-service" &
+  "${BUILD_DIR}/bin/fridge-service" &
   SERVICE_PIDS+=($!)
 
   cleanup() {

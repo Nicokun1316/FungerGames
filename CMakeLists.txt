@@ -15,5 +15,5 @@ find_package(Qt6 6.9 REQUIRED COMPONENTS Core Quick Qml Network)
 qt_standard_project_setup(REQUIRES 6.9)
 
 add_subdirectory(app)
-add_subdirectory(iot-services/device-status-service)
-add_subdirectory(iot-services/game-session-service)
+add_subdirectory(iot-services/face-tracking-service)
+add_subdirectory(iot-services/fridge-service)

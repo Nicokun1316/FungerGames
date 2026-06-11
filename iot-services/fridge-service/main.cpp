@@ -1,13 +1,13 @@
 #include <QCoreApplication>
 
-#include "DeviceStatusServer.h"
+#include "FridgeServiceServer.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    DeviceStatusServer server;
-    if (!server.start(45454)) {
+    FridgeServiceServer server;
+    if (!server.start(45455)) {
         return 1;
     }
 
