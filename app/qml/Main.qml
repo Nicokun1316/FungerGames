@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
+import QtMultimedia
 
 ApplicationWindow {
     id: window
@@ -98,6 +99,21 @@ ApplicationWindow {
         NumberAnimation {
             duration: 1200
             easing.type: Easing.InOutQuad
+        }
+    }
+
+    SoundEffect {
+        id: alarmSound
+        source: "qrc:/qt/qml/FungerGames/assets/alarm-loop.wav"
+        loops: SoundEffect.Infinite
+        volume: 0.55
+    }
+
+    onAlarmActiveChanged: {
+        if (alarmActive) {
+            alarmSound.play()
+        } else {
+            alarmSound.stop()
         }
     }
 

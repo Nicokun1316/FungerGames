@@ -13,4 +13,5 @@ target_link_libraries(FungerGames
         Qt6::Quick
         Qt6::Qml
         Qt6::Network
+        Qt6::Multimedia
 )

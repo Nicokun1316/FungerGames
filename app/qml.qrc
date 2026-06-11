@@ -2,5 +2,6 @@
     <qresource prefix="/qt/qml/FungerGames">
         <file alias="Main.qml">qml/Main.qml</file>
         <file alias="assets/cursed-fridge-face.svg">assets/cursed-fridge-face.svg</file>
+        <file alias="assets/alarm-loop.wav">assets/alarm-loop.wav</file>
     </qresource>
 </RCC>
