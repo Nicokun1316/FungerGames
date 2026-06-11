@@ -49,6 +49,9 @@ ApplicationWindow {
     readonly property bool alarmActive: appController ? appController.alarmActive : false
     readonly property real themeTarget: dailyLimit > 0 ? Math.min(Math.max(dailyCalories / dailyLimit, 0.0), 1.0) : 0.0
     property real themeProgress: themeTarget
+    property bool moodTransitionActive: false
+    property bool moodTransitionToCursed: false
+    property real moodTransitionProgress: 0.0
 
     readonly property color calmBgStart: "#F0E8D8"
     readonly property color cursedBgStart: "#110A03"
@@ -96,6 +99,24 @@ ApplicationWindow {
             duration: 1200
             easing.type: Easing.InOutQuad
         }
+    }
+
+    onOverLimitChanged: {
+        moodTransitionToCursed = overLimit
+        moodTransitionProgress = 0.0
+        moodTransitionActive = true
+        moodTransitionAnimation.restart()
+    }
+
+    NumberAnimation {
+        id: moodTransitionAnimation
+        target: window
+        property: "moodTransitionProgress"
+        from: 0.0
+        to: 1.0
+        duration: 1400
+        easing.type: Easing.InOutCubic
+        onFinished: window.moodTransitionActive = false
     }
 
     function deltaTextForCalories() {
@@ -259,6 +280,103 @@ ApplicationWindow {
                 font.family: "DM Mono"
                 font.pixelSize: 9
                 font.letterSpacing: 0.6
+            }
+        }
+    }
+
+    component MoodTransitionOverlay: Item {
+        readonly property real startX: (width * 0.5) - 80
+        readonly property real startY: height * 0.14
+        readonly property real endX: (width * 0.5) - 110
+        readonly property real endY: height * 0.10
+        readonly property real progress: moodTransitionProgress
+        readonly property real travelX: startX + ((endX - startX) * progress)
+        readonly property real travelY: startY + ((endY - startY) * progress) - (Math.sin(progress * Math.PI) * 78)
+        readonly property real arcOffset: Math.sin(progress * Math.PI) * (moodTransitionToCursed ? 58 : -58)
+        readonly property real blend: moodTransitionToCursed ? progress : (1.0 - progress)
+
+        Item {
+            x: parent.travelX + parent.arcOffset
+            y: parent.travelY
+            width: 220
+            height: 255
+            scale: 1.0 + (blend * 0.35)
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 160 * (1.0 - (blend * 0.18))
+                height: width
+                radius: width / 2
+                opacity: 1.0 - blend
+
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#EAF3E6" }
+                    GradientStop { position: 0.55; color: "#D6EACC" }
+                    GradientStop { position: 1.0; color: "#B8D9A0" }
+                }
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 80
+                    height: 96
+                    radius: 10
+                    color: "#D6EACC"
+                    border.width: 2
+                    border.color: "#5C8B4A"
+                }
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 38
+                    width: 64
+                    height: 30
+                    radius: 10
+                    color: "#C2DBA8"
+                    border.width: 2
+                    border.color: "#5C8B4A"
+                }
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 68
+                    width: 64
+                    height: 2
+                    color: "#5C8B4A"
+                }
+
+                Rectangle {
+                    x: 66
+                    y: 58
+                    width: 12
+                    height: 12
+                    radius: 6
+                    color: "#2A4A2E"
+                }
+
+                Rectangle {
+                    x: 82
+                    y: 58
+                    width: 12
+                    height: 12
+                    radius: 6
+                    color: "#2A4A2E"
+                }
+            }
+
+            Item {
+                anchors.fill: parent
+                opacity: blend
+
+                Image {
+                    anchors.centerIn: parent
+                    width: 180
+                    height: 220
+                    source: "qrc:/qt/qml/FungerGames/assets/cursed-fridge-face.svg"
+                    fillMode: Image.PreserveAspectFit
+                    sourceSize.width: 360
+                    sourceSize.height: 440
+                    asynchronous: true
+                }
             }
         }
     }
@@ -1078,7 +1196,7 @@ ApplicationWindow {
                     Loader {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        active: overLimit
+                        active: overLimit && !moodTransitionActive
                         asynchronous: true
                         sourceComponent: cursedMoodComponent
                     }
@@ -1086,17 +1204,25 @@ ApplicationWindow {
                     Loader {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        active: !overLimit
+                        active: !overLimit && !moodTransitionActive
                         asynchronous: true
                         sourceComponent: calmMoodComponent
+                    }
+
+                    Loader {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        active: moodTransitionActive
+                        asynchronous: true
+                        sourceComponent: MoodTransitionOverlay {}
                     }
                 }
             }
 
             ColumnLayout {
-                Layout.preferredWidth: 280
-                Layout.maximumWidth: 300
-                Layout.minimumWidth: 260
+                Layout.preferredWidth: 300
+                Layout.maximumWidth: 320
+                Layout.minimumWidth: 280
                 Layout.fillHeight: true
                 spacing: 10
 
@@ -1172,8 +1298,10 @@ ApplicationWindow {
                                             text: appController ? appController.alarmDisplay : qsTr("--:--")
                                             color: alarmActive ? accentColor : titleColor
                                             font.family: "Playfair Display"
-                                            font.pixelSize: 34
+                                            font.pixelSize: 30
                                             font.weight: 500
+                                            wrapMode: Text.Wrap
+                                            horizontalAlignment: Text.AlignHCenter
                                         }
 
                                         Label {
