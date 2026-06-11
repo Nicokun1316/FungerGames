@@ -1,0 +1,23 @@
+# Build output
+/build/
+
+# CMake and Ninja artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+build.ninja
+.ninja_deps
+.ninja_log
+compile_commands.json
+
+# Qt Creator and local IDE state
+*.pro.user
+*.pro.user.*
+*.creator
+*.creator.user
+*.creator.user.*
+*.qtc_clangd
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
