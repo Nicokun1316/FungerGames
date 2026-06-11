@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import QtMultimedia
+import QtQuick.Particles
 
 ApplicationWindow {
     id: window
@@ -48,8 +49,11 @@ ApplicationWindow {
     readonly property real calmProgress: dailyLimit > 0 ? Math.min(dailyCalories / dailyLimit, 1.0) : 0.0
     readonly property real overageProgress: Math.min(calorieOverage / 800.0, 1.0)
     readonly property bool alarmActive: appController ? appController.alarmActive : false
+    property int alarmElapsedSeconds: 0
     readonly property real themeTarget: dailyLimit > 0 ? Math.min(Math.max(dailyCalories / dailyLimit, 0.0), 1.0) : 0.0
     property real themeProgress: themeTarget
+    readonly property bool fireActive: alarmActive && alarmElapsedSeconds >= 10
+    readonly property int fireStage: fireActive ? Math.min(8, alarmElapsedSeconds - 9) : 0
 
     readonly property color calmBgStart: "#F0E8D8"
     readonly property color cursedBgStart: "#110A03"
@@ -106,10 +110,22 @@ ApplicationWindow {
         volume: 0.55
     }
 
+    Timer {
+        id: alarmElapsedTimer
+        interval: 1000
+        repeat: true
+        running: false
+        onTriggered: alarmElapsedSeconds += 1
+    }
+
     onAlarmActiveChanged: {
         if (alarmActive) {
+            alarmElapsedSeconds = 0
+            alarmElapsedTimer.start()
             alarmSound.play()
         } else {
+            alarmElapsedTimer.stop()
+            alarmElapsedSeconds = 0
             alarmSound.stop()
         }
     }
@@ -1166,6 +1182,79 @@ ApplicationWindow {
                                         gradient: Gradient {
                                             GradientStop { position: 0.0; color: overLimit ? "#268B2B18" : "#1A5C8B4A" }
                                             GradientStop { position: 1.0; color: "#00000000" }
+                                        }
+                                    }
+
+                                    Loader {
+                                        anchors.fill: parent
+                                        active: fireActive
+                                        asynchronous: true
+                                        sourceComponent: Component {
+                                            Item {
+                                                ParticleSystem {
+                                                    id: fireSystem
+                                                    anchors.fill: parent
+                                                    running: fireActive
+                                                }
+
+                                                Emitter {
+                                                    system: fireSystem
+                                                    emitRate: 22 + (fireStage * 22)
+                                                    lifeSpan: 900 + (fireStage * 110)
+                                                    size: 28 + (fireStage * 4)
+                                                    sizeVariation: 12
+                                                    endSize: 8
+                                                    width: parent.width
+                                                    height: 10
+                                                    x: 0
+                                                    y: parent.height - 14
+                                                    velocity: AngleDirection {
+                                                        angle: 270
+                                                        angleVariation: 26
+                                                        magnitude: 90 + (fireStage * 18)
+                                                        magnitudeVariation: 28
+                                                    }
+                                                    acceleration: PointDirection {
+                                                        xVariation: 18
+                                                        y: -30 - (fireStage * 10)
+                                                        yVariation: 12
+                                                    }
+                                                }
+
+                                                Wander {
+                                                    system: fireSystem
+                                                    anchors.fill: parent
+                                                    pace: 20 + (fireStage * 4)
+                                                    xVariance: 26 + (fireStage * 8)
+                                                    yVariance: 12 + (fireStage * 4)
+                                                }
+
+                                                ImageParticle {
+                                                    system: fireSystem
+                                                    source: "qrc:/qt/qml/FungerGames/assets/fire-particle.svg"
+                                                    color: "#FFD36B"
+                                                    colorVariation: 0.18
+                                                    redVariation: 0.08
+                                                    greenVariation: -0.14
+                                                    blueVariation: -0.24
+                                                    alpha: 0.72
+                                                    entryEffect: ImageParticle.Fade
+                                                }
+
+                                                Rectangle {
+                                                    anchors.left: parent.left
+                                                    anchors.right: parent.right
+                                                    anchors.bottom: parent.bottom
+                                                    height: 70 + (fireStage * 8)
+                                                    color: "transparent"
+
+                                                    gradient: Gradient {
+                                                        GradientStop { position: 0.0; color: Qt.rgba(1.0, 0.29, 0.07, 0.18 + (fireStage * 0.045)) }
+                                                        GradientStop { position: 0.45; color: Qt.rgba(1.0, 0.62, 0.18, 0.12 + (fireStage * 0.03)) }
+                                                        GradientStop { position: 1.0; color: "#00FF7A24" }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 

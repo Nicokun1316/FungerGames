@@ -3,5 +3,6 @@
         <file alias="Main.qml">qml/Main.qml</file>
         <file alias="assets/cursed-fridge-face.svg">assets/cursed-fridge-face.svg</file>
         <file alias="assets/alarm-loop.wav">assets/alarm-loop.wav</file>
+        <file alias="assets/fire-particle.svg">assets/fire-particle.svg</file>
     </qresource>
 </RCC>
